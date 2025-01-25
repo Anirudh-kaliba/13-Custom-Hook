@@ -1,42 +1,42 @@
-import { useState, useEffect } from 'react';
-
-import Places from './Places.jsx';
-import Error from './Error.jsx';
-import { sortPlacesByDistance } from '../loc.js';
-import { fetchAvailablePlaces } from '../http.js';
+import { useState, useEffect } from "react";
+import Places from "./Places.jsx";
+import Error from "./Error.jsx";
+import { sortPlacesByDistance } from "../loc.js";
+import { fetchAvailablePlaces } from "../http.js";
+import useFetch from "../hooks/useFetch.js";
 
 export default function AvailablePlaces({ onSelectPlace }) {
-  const [isFetching, setIsFetching] = useState(false);
-  const [availablePlaces, setAvailablePlaces] = useState([]);
-  const [error, setError] = useState();
+  const {
+    isFetching,
+    error,
+    fetchedData: availablePlaces,
+    setFetchedData: setAvailablePlaces,
+  } = useFetch(fetchAvailablePlaces, []);
+
+  const [sortedPlaces, setSortedPlaces] = useState(null); // Local state for sorted places
 
   useEffect(() => {
-    async function fetchPlaces() {
-      setIsFetching(true);
-
-      try {
-        const places = await fetchAvailablePlaces();
-
-        navigator.geolocation.getCurrentPosition((position) => {
-          const sortedPlaces = sortPlacesByDistance(
-            places,
+    if (availablePlaces && availablePlaces.length > 0 && !sortedPlaces) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const sorted = sortPlacesByDistance(
+            availablePlaces,
             position.coords.latitude,
             position.coords.longitude
           );
-          setAvailablePlaces(sortedPlaces);
-          setIsFetching(false);
-        });
-      } catch (error) {
-        setError({
-          message:
-            error.message || 'Could not fetch places, please try again later.',
-        });
-        setIsFetching(false);
-      }
+          setSortedPlaces(sorted); // Update sorted places only once
+        },
+        (geoError) => {
+          console.error("Geolocation error:", geoError);
+        }
+      );
     }
+  }, [availablePlaces, sortedPlaces]); // Now depends on sortedPlaces, not availablePlaces
 
-    fetchPlaces();
-  }, []);
+  // If there's no sorted places yet, show loading
+  if (isFetching) {
+    return <div>Loading places...</div>;
+  }
 
   if (error) {
     return <Error title="An error occurred!" message={error.message} />;
@@ -45,7 +45,7 @@ export default function AvailablePlaces({ onSelectPlace }) {
   return (
     <Places
       title="Available Places"
-      places={availablePlaces}
+      places={sortedPlaces || availablePlaces} // Show sorted places or fallback to availablePlaces
       isLoading={isFetching}
       loadingText="Fetching place data..."
       fallbackText="No places available."

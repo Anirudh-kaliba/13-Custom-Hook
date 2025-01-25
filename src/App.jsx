@@ -1,39 +1,20 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
-
+// App.jsx
+import { useRef, useState, useCallback } from 'react';
 import Places from './components/Places.jsx';
 import Modal from './components/Modal.jsx';
 import DeleteConfirmation from './components/DeleteConfirmation.jsx';
 import logoImg from './assets/logo.png';
 import AvailablePlaces from './components/AvailablePlaces.jsx';
-import { fetchUserPlaces, updateUserPlaces } from './http.js';
+import { fetchUserPlaces } from './http.js';
 import Error from './components/Error.jsx';
+import useFetch from './hooks/useFetch.js'; 
+import { updateUserPlaces } from './http.js';
 
 function App() {
   const selectedPlace = useRef();
-
-  const [userPlaces, setUserPlaces] = useState([]);
-  const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState();
-
   const [errorUpdatingPlaces, setErrorUpdatingPlaces] = useState();
-
   const [modalIsOpen, setModalIsOpen] = useState(false);
-
-  useEffect(() => {
-    async function fetchPlaces() {
-      setIsFetching(true);
-      try {
-        const places = await fetchUserPlaces();
-        setUserPlaces(places);
-      } catch (error) {
-        setError({ message: error.message || 'Failed to fetch user places.' });
-      }
-
-      setIsFetching(false);
-    }
-
-    fetchPlaces();
-  }, []);
+  const { isFetching, error, fetchedData: userPlaces, setFetchedData: setUserPlaces } = useFetch(fetchUserPlaces, []);
 
   function handleStartRemovePlace(place) {
     setModalIsOpen(true);
@@ -45,7 +26,7 @@ function App() {
   }
 
   async function handleSelectPlace(selectedPlace) {
-    // await updateUserPlaces([selectedPlace, ...userPlaces]);
+    await updateUserPlaces([selectedPlace, ...userPlaces]);
 
     setUserPlaces((prevPickedPlaces) => {
       if (!prevPickedPlaces) {
@@ -88,7 +69,7 @@ function App() {
 
       setModalIsOpen(false);
     },
-    [userPlaces]
+    [userPlaces, setUserPlaces]
   );
 
   function handleError() {
@@ -142,3 +123,50 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+// // useCounter.js
+// import { useState } from 'react';
+
+// // Custom hook that manages counter state
+// function useCounter(initialValue = 0) {
+//   const [count, setCount] = useState(initialValue);
+
+//   // Method to increment counter
+//   const increment = () => setCount(count + 1);
+
+//   // Method to decrement counter
+//   const decrement = () => setCount(count - 1);
+
+//   return { count, increment, decrement };
+// }
+
+// export default useCounter;
+
+
+
+
+
+// // CounterComponent.js
+// import React from 'react';
+// import useCounter from './useCounter';  // Custom hook को import करना
+
+// function CounterComponent() {
+//   // Custom hook का use
+//   const { count, increment, decrement } = useCounter(0);
+
+//   return (
+//     <div>
+//       <h1>Counter: {count}</h1>
+//       <button onClick={increment}>Increase</button>
+//       <button onClick={decrement}>Decrease</button>
+//     </div>
+//   );
+// }
+
+// export default CounterComponent;
+
+
